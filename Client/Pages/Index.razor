@@ -1,9 +1,132 @@
 ﻿@page "/"
+@using Client.Components
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Blazor WASM and Minimal APIs CRUD Mini Course</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (_showingCreateModal)
+{
+    <ModalCreatePost OnClickButtonClose="(createdPost) => CloseCreateModal(createdPost)" />
+}
 
-Welcome to your new app.
+@if (_showingUpdateModal)
+{
+    <ModalUpdatePost PostToUpdate="_postBeingUpdated" OnClickButtonClose="(updatedPost) => CloseUpdateModal(updatedPost)" />
+}
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@if (_showingDeleteModal)
+{
+    <ModalConfirmDelete PostToDelete="_postBeingDeleted" OnClickButtonClose="(deleteSuccessful) => CloseDeleteModal(deleteSuccessful)" />
+}
+
+<h1>Blazor WASM and Minimal APIs CRUD Mini Course</h1>
+
+<button @onclick="() => _showingCreateModal = true" class="btn btn-success btn-lg w-100 mb-3">
+    Create Post
+</button>
+
+<div class="table-responsive">
+    <table class="table table-bordered border-dark table-striped">
+        <thead>
+            <tr>
+                <th scope="col">PostId (PK)</th>
+                <th scope="col">Title</th>
+                <th scope="col">Content</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @if (_posts != null)
+            {
+                @foreach (var post in _posts)
+                {
+                    <tr>
+                        <th scope="row">@post.PostId</th>
+                        <td>@post.Title</td>
+                        <td>@post.Content</td>
+                        <td>
+                            <button @onclick="() => OpenUpdateModal(post)" class="btn btn-warning w-100 mb-2">
+                                Update
+                            </button>
+                            <button @onclick="() => OpenDeleteModal(post)" class="btn btn-danger w-100">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    #pragma warning disable CS8618
+    [Inject]
+    protected HttpClient HttpClient { get; set; }
+#pragma warning restore CS8618
+
+    private List<Post>? _posts = null;
+
+    private bool _showingCreateModal = false;
+    private bool _showingUpdateModal = false;
+    private bool _showingDeleteModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _posts = await HttpClient.GetFromJsonAsync<List<Post>?>(APIEndpoints.PostsAll);
+
+        Console.WriteLine($"Found {_posts?.Count} posts!");
+    }
+
+    private void CloseCreateModal(Post? createdPost)
+    {
+        if (createdPost != null)
+        {
+            _posts?.Add(createdPost);
+        }
+
+        _showingCreateModal = false;
+    }
+
+    private Post? _postBeingUpdated = null;
+    private void OpenUpdateModal(Post? postToUpdate)
+    {
+        _postBeingUpdated = postToUpdate;
+        _showingUpdateModal = true;
+    }
+
+    private void CloseUpdateModal(Post? updatedPost)
+    {
+        if (updatedPost != null)
+        {
+            Post? unUpdatedPostInList = _posts?.FirstOrDefault(post => post.PostId == updatedPost.PostId);
+
+            if (unUpdatedPostInList != null)
+            {
+                unUpdatedPostInList.Title = updatedPost.Title;
+                unUpdatedPostInList.Content = updatedPost.Content;
+            }
+        }
+
+        _postBeingUpdated = null;
+        _showingUpdateModal = false;
+    }
+
+    private Post? _postBeingDeleted = null;
+    private void OpenDeleteModal(Post? postToDelete)
+    {
+        _postBeingDeleted = postToDelete;
+        _showingDeleteModal = true;
+    }
+
+    private void CloseDeleteModal(bool deleteSuccessful)
+    {
+        if (deleteSuccessful && _postBeingDeleted != null)
+        {
+            _posts?.Remove(_postBeingDeleted);
+        }
+
+        _postBeingDeleted = null;
+        _showingDeleteModal = false;
+    }
+}

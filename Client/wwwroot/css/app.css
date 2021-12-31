@@ -8,6 +8,10 @@ h1:focus {
     outline: none;
 }
 
+.bg-half-black {
+    background: rgba(0, 0, 0, 0.5);
+}
+
 a, .btn-link {
     color: #0071c1;
 }

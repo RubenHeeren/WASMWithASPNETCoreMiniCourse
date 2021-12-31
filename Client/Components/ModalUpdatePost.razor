@@ -1,0 +1,70 @@
+﻿<div class="modal fade show d-block bg-half-black" id="staticBackdrop" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel">Update post</h5>
+                <button @onclick="() => OnClickButtonClose.InvokeAsync(PostToUpdate)" type="button" class="btn-close" aria-label="Close"></button>
+            </div>
+
+            @if (PostToUpdate != null)
+            {
+                <EditForm Model="PostToUpdate" OnValidSubmit="UpdatePostAsync">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <InputText @bind-Value="PostToUpdate.Title" class="form-control" id="title" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Content</label>
+                            <InputTextArea @bind-Value="PostToUpdate.Content" class="form-control" id="content" />
+                        </div>
+
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                    </div>
+                    <div class="modal-footer">
+                        <button @onclick="() => OnClickButtonClose.InvokeAsync(PostToUpdate)" type="button" class="btn btn-secondary">Close</button>
+                        <button type="submit" class="btn btn-success">Update</button>
+                    </div>
+                </EditForm>
+            }
+            else
+            {
+                <h1>Loading...</h1>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<Post?> OnClickButtonClose { get; set; }
+
+    [Parameter]
+    public Post? PostToUpdate { get; set; } = null;
+
+#pragma warning disable CS8618
+    [Inject]
+    protected HttpClient HttpClient { get; set; }
+
+    [Inject]
+    protected IJSRuntime JsRuntime { get; set; }
+#pragma warning restore CS8618
+
+    private async Task UpdatePostAsync()
+    {
+        Console.WriteLine($"UpdatePostAsync | title: {PostToUpdate.Title} | content: {PostToUpdate.Content}");
+
+        HttpResponseMessage response = await HttpClient.PutAsJsonAsync<Post>(APIEndpoints.PostsUpdate(PostToUpdate.PostId), PostToUpdate);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Post update successful. Close the modal to see it in the table.");
+        }
+        else
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Post update failed.");
+        }
+    }
+}

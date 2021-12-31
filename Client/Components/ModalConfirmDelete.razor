@@ -1,0 +1,55 @@
+﻿<div class="modal fade show d-block bg-half-black" id="staticBackdrop" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel">Delete post</h5>
+                <button @onclick="() => OnClickButtonClose.InvokeAsync(false)" type="button" class="btn-close" aria-label="Close"></button>
+            </div>
+
+            @if (PostToDelete != null)
+            {
+                <div class="modal-body">
+                    <h3>Are you sure you want to delete post "@PostToDelete.Title"?</h3>
+                </div>
+
+                <div class="modal-footer">
+                    <button @onclick="() => OnClickButtonClose.InvokeAsync(false)" type="button" class="btn btn-secondary">Close</button>
+                    <button @onclick="DeletePostAsync" type="button" class="btn btn-danger">Confirm</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<bool> OnClickButtonClose { get; set; }
+
+    [Parameter]
+    public Post? PostToDelete { get; set; } = null;
+
+#pragma warning disable CS8618
+    [Inject]
+    protected HttpClient HttpClient { get; set; }
+
+    [Inject]
+    protected IJSRuntime JsRuntime { get; set; }
+#pragma warning restore CS8618
+
+    private async Task DeletePostAsync()
+    {
+        Console.WriteLine($"UpdatePostAsync | title: {PostToDelete.Title} | content: {PostToDelete.Content}");
+
+        HttpResponseMessage response = await HttpClient.DeleteAsync(APIEndpoints.PostsDelete(PostToDelete.PostId));
+
+        if (response.IsSuccessStatusCode)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Post delete successful. Close the modal to see it in the table.");
+            OnClickButtonClose.InvokeAsync(true);
+        }
+        else
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Post delete failed.");
+        }
+    }
+}
